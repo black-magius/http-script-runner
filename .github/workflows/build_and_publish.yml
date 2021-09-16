@@ -1,0 +1,38 @@
+
+name: build artifact from source
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    
+    - name: Setup Go
+      uses: actions/setup-go@v2
+#      with:
+#        go-version: '1.14.0'  
+
+    - name: Install dependencies
+      run: |
+        go version
+        go get -u golang.org/x/lint/golint
+        
+    - name: Run build
+      run: go build . 
+      
+    - name: Set env
+      run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
+           
+    - name: Tar files
+      run: tar -cvzf http-script-runner_${{ env.RELEASE_VERSION }}_linux_amd64.tar.gz script-exporter
+        
+    - name: Upload to release
+      uses: JasonEtco/upload-to-release@master
+      with:
+        args: http-script-runner_${{ env.RELEASE_VERSION }}_linux_amd64.tar.gz application/tar+gzip
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  
